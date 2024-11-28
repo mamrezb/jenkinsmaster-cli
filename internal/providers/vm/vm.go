@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -55,7 +54,7 @@ func (vm *VMProvider) Deploy() error {
 
 	// Validate SSH connection
 	fmt.Println("\nValidating SSH connection...")
-	err = vm.validateSSHConnection()
+	err = utils.ValidateSSHConnection(vm.IPAddress, vm.Port, vm.Username, vm.PrivateKey)
 	if err != nil {
 		return err
 	}
@@ -129,16 +128,6 @@ func validateFilePath(input string) error {
 	}
 	if fileInfo.IsDir() {
 		return fmt.Errorf("path is a directory, not a file")
-	}
-	return nil
-}
-
-func (vm *VMProvider) validateSSHConnection() error {
-	sshCmd := fmt.Sprintf("ssh -o BatchMode=yes -o StrictHostKeyChecking=no -i %s -p %s %s@%s echo Connection successful", vm.PrivateKey, vm.Port, vm.Username, vm.IPAddress)
-	cmd := exec.Command("sh", "-c", sshCmd)
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("SSH connection failed: %v", err)
 	}
 	return nil
 }

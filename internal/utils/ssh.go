@@ -6,22 +6,22 @@ import (
 	"time"
 )
 
+func ValidateSSHConnection(host, port, user, privateKey string) error {
+	sshCmd := fmt.Sprintf("ssh -o BatchMode=yes -o StrictHostKeyChecking=no -i %s -p %s %s@%s echo Connection successful", privateKey, port, user, host)
+	cmd := exec.Command("sh", "-c", sshCmd)
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("SSH connection failed: %v", err)
+	}
+	return nil
+}
+
 func WaitForSSH(host, port, user, privateKey string, timeout time.Duration) error {
 	endTime := time.Now().Add(timeout)
 	for {
 		// Attempt to SSH into the host and run a simple command
-		sshCmd := exec.Command("ssh",
-			"-o", "BatchMode=yes",
-			"-o", "StrictHostKeyChecking=no",
-			"-i", privateKey,
-			"-p", port,
-			fmt.Sprintf("%s@%s", user, host),
-			"echo SSH connection successful")
-
-		output, err := sshCmd.CombinedOutput()
+		err := ValidateSSHConnection(host, port, user, privateKey)
 		if err == nil {
-			// SSH command succeeded
-			fmt.Println(string(output))
 			return nil
 		}
 
