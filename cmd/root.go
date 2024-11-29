@@ -8,7 +8,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "jenkinsmaster-cli",
+	Use:   "jenkinsmaster",
 	Short: "CLI tool to deploy JenkinsMaster",
 	Long:  `An interactive CLI tool to deploy JenkinsMaster on various platforms.`,
 }
