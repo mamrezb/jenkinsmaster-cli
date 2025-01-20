@@ -2,12 +2,17 @@ package ansible
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"html/template"
 	"os"
 	"os/exec"
-	"path/filepath"
 )
+
+// Embed all templates into the binary using go:embed.
+//
+//go:embed templates/*
+var ansibleTemplates embed.FS
 
 type Config struct {
 	Host                     string
@@ -34,29 +39,14 @@ func DeployAnsible(config Config) error {
 	}
 	defer os.RemoveAll(tempDir) // Clean up tempDir after we're done
 
-	// Save the original working directory
-	originalDir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("failed to get current working directory: %v", err)
-	}
-	defer os.Chdir(originalDir) // Change back after we're done
-
 	// Change to the temporary directory
 	err = os.Chdir(tempDir)
 	if err != nil {
 		return fmt.Errorf("failed to change to temporary directory: %v", err)
 	}
 
-	// Ensure templates directory exists
-	exePath, err := os.Executable()
-	if err != nil {
-		return err
-	}
-	exeDir := filepath.Dir(exePath)
-	templatesDir := filepath.Join(exeDir, "templates")
-
 	// Generate inventory.ini
-	inventoryContent, err := parseTemplate(filepath.Join(templatesDir, "inventory.tpl"), config)
+	inventoryContent, err := parseTemplate("templates/inventory.tpl", config)
 	if err != nil {
 		return err
 	}
@@ -70,7 +60,7 @@ func DeployAnsible(config Config) error {
 	config.InventoryFile = inventoryFile
 
 	// Generate ansible.cfg
-	ansibleCfgContent, err := parseTemplate(filepath.Join(templatesDir, "ansible.cfg.tpl"), config)
+	ansibleCfgContent, err := parseTemplate("templates/ansible.cfg.tpl", config)
 	if err != nil {
 		return err
 	}
@@ -80,7 +70,7 @@ func DeployAnsible(config Config) error {
 	}
 
 	// Generate requirements.yml
-	requirementsContent, err := parseTemplate(filepath.Join(templatesDir, "requirements.yml.tpl"), config)
+	requirementsContent, err := parseTemplate("templates/requirements.yml.tpl", config)
 	if err != nil {
 		return err
 	}
@@ -100,7 +90,7 @@ func DeployAnsible(config Config) error {
 	}
 
 	// Generate playbook.yml
-	playbookContent, err := parseTemplate(filepath.Join(templatesDir, "playbook.yml.tpl"), config)
+	playbookContent, err := parseTemplate("templates/playbook.yml.tpl", config)
 	if err != nil {
 		return err
 	}
@@ -121,14 +111,15 @@ func DeployAnsible(config Config) error {
 	return nil
 }
 
+// parseTemplate reads a file from the embedded templates and executes it with data
 func parseTemplate(templateFile string, data interface{}) (string, error) {
-	tmpl, err := template.ParseFiles(templateFile)
+	tmpl, err := template.ParseFS(ansibleTemplates, templateFile)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error parsing template: %v", err)
 	}
 	var tpl bytes.Buffer
 	if err := tmpl.Execute(&tpl, data); err != nil {
-		return "", err
+		return "", fmt.Errorf("error executing template: %v", err)
 	}
 	return tpl.String(), nil
 }
