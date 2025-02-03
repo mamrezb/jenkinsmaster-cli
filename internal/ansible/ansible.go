@@ -3,6 +3,7 @@ package ansible
 import (
 	"bytes"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"os"
@@ -100,7 +101,21 @@ func DeployAnsible(config Config) error {
 	}
 
 	// Run ansible-playbook
-	ansibleCmd := exec.Command("ansible-playbook", "playbook.yml")
+	varsMap := map[string]interface{}{
+		"jenkins_admin_user":          config.JenkinsAdminUser,
+		"jenkins_admin_password":      config.JenkinsAdminPassword,
+		"jenkins_http_port":           config.JenkinsHTTPPort,
+		"jenkins_docker_image":        config.JenkinsDockerImage,
+		"jenkins_container_name":      config.JenkinsContainerName,
+		"jenkins_plugin_list":         config.JenkinsPluginList,
+		"jenkins_job_dsl_repo":        config.JenkinsJobDSLRepo,
+		"jenkins_shared_library_repo": config.JenkinsSharedLibraryRepo,
+	}
+	extraVarsJSON, err := json.Marshal(varsMap)
+	if err != nil {
+		return fmt.Errorf("failed to marshal extraVars: %v", err)
+	}
+	ansibleCmd := exec.Command("ansible-playbook", "playbook.yml", "-e", string(extraVarsJSON))
 	ansibleCmd.Stdout = os.Stdout
 	ansibleCmd.Stderr = os.Stderr
 	err = ansibleCmd.Run()

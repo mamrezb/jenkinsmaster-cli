@@ -22,6 +22,7 @@ func CollectAnsibleVariables() (Config, error) {
 	config.JenkinsDockerImage = "jenkins/jenkins:lts"
 	config.JenkinsContainerName = "jenkinsmaster"
 	config.JenkinsPluginList = []string{
+		"workflow-job",
 		"configuration-as-code",
 		"job-dsl",
 		"pipeline-groovy-lib",
@@ -333,6 +334,7 @@ func validateDockerImage(image string) bool {
 }
 
 var fixedPlugins = []string{
+	"workflow-job",
 	"configuration-as-code",
 	"job-dsl",
 	"pipeline-groovy-lib",
